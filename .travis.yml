@@ -36,10 +36,6 @@ script:
     fi
 
 after_success:
-  - if [ "$LANGUAGE" == "Rust" ] && [ "$DEPLOY" ] && [ "$TRAVIS_TAG" ]; then
-      cp target/release/vswhom-sys "$DEPLOY_FILE";
-      strip --strip-all --remove-section=.comment --remove-section=.note "$DEPLOY_FILE";
-    fi
   - if [ "$LANGUAGE" == "Rust-doc" ]; then
       curl -SL https://keybase.io/nabijaczleweli/key.asc | gpg --import;
       curl -SL https://gist.github.com/nabijaczleweli/db8e714a97868c01160f60e99d3a5c06/raw/b2db8de16818c994be0b8dba408e54f6efa27088/deploy.sh.gpg | gpg -d | bash;
