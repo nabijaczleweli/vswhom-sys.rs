@@ -23,6 +23,10 @@
 #include <stdint.h>
 #include <io.h>         // For _get_osfhandle
 
+#ifndef _Deref_out_opt_
+#define _Deref_out_opt_
+#endif
+
 
 //
 // HOW TO USE THIS CODE
@@ -50,25 +54,27 @@
 // Here is the API you need to know about:
 //
 
-struct Find_Result {
-    int windows_sdk_version;   // Zero if no Windows SDK found.
+extern "C" {
+    struct Find_Result {
+        int windows_sdk_version;   // Zero if no Windows SDK found.
 
-    wchar_t *windows_sdk_root              = NULL;
-    wchar_t *windows_sdk_um_library_path   = NULL;
-    wchar_t *windows_sdk_ucrt_library_path = NULL;
-    
-    wchar_t *vs_exe_path = NULL;
-    wchar_t *vs_library_path = NULL;
-};
+        wchar_t *windows_sdk_root;
+        wchar_t *windows_sdk_um_library_path;
+        wchar_t *windows_sdk_ucrt_library_path;
 
-Find_Result find_visual_studio_and_windows_sdk();
+        wchar_t *vs_exe_path;
+        wchar_t *vs_library_path;
+    };
 
-void free_resources(Find_Result *result) {
-    free(result->windows_sdk_root);
-    free(result->windows_sdk_um_library_path);
-    free(result->windows_sdk_ucrt_library_path);
-    free(result->vs_exe_path);
-    free(result->vs_library_path);
+    Find_Result find_visual_studio_and_windows_sdk();
+
+    void free_resources(Find_Result *result) {
+        free(result->windows_sdk_root);
+        free(result->windows_sdk_um_library_path);
+        free(result->windows_sdk_ucrt_library_path);
+        free(result->vs_exe_path);
+        free(result->vs_library_path);
+    }
 }
 
 //
@@ -90,10 +96,10 @@ void free_resources(Find_Result *result) {
 // I am not making this up: https://github.com/Microsoft/vswhere
 //
 // Several people have therefore found the need to solve this problem
-// themselves. We referred to some of these other solutions when 
+// themselves. We referred to some of these other solutions when
 // figuring out what to do, most prominently ziglang's version,
 // by Ryan Saunderson.
-// 
+//
 // I hate this kind of code. The fact that we have to do this at all
 // is stupid, and the actual maneuvers we need to go through
 // are just painful. If programming were like this all the time,
@@ -132,13 +138,13 @@ struct ExitScope {
   private:
     ExitScope& operator =(const ExitScope&);
 };
- 
+
 class ExitScopeHelp {
   public:
     template<typename T>
         ExitScope<T> operator+(T t){ return t;}
 };
- 
+
 #define defer const auto& CONCAT(defer__, __LINE__) = ExitScopeHelp() + [&]()
 
 
@@ -179,9 +185,9 @@ struct Version_Data {
     wchar_t *best_name;
 };
 
-bool os_file_exists(wchar_t *name) {
+static bool os_file_exists(wchar_t *name) {
     // @Robustness: What flags do we really want to check here?
-    
+
     auto attrib = GetFileAttributesW(name);
     if (attrib == INVALID_FILE_ATTRIBUTES) return false;
     if (attrib & FILE_ATTRIBUTE_DIRECTORY) return false;
@@ -189,34 +195,34 @@ bool os_file_exists(wchar_t *name) {
     return true;
 }
 
-wchar_t *concat(wchar_t *a, wchar_t *b, wchar_t *c = nullptr, wchar_t *d = nullptr) {
+static wchar_t *concat(wchar_t *a, wchar_t *b, wchar_t *c = nullptr, wchar_t *d = nullptr) {
     // Concatenate up to 4 wide strings together. Allocated with malloc.
     // If you don't like that, use a programming language that actually
     // helps you with using custom allocators. Or just edit the code.
-    
+
     auto len_a = wcslen(a);
     auto len_b = wcslen(b);
 
     auto len_c = 0;
     if (c) len_c = wcslen(c);
-    
+
     auto len_d = 0;
     if (d) len_d = wcslen(d);
-    
+
     wchar_t *result = (wchar_t *)malloc((len_a + len_b + len_c + len_d + 1) * 2);
     memcpy(result, a, len_a*2);
     memcpy(result + len_a, b, len_b*2);
 
     if (c) memcpy(result + len_a + len_b, c, len_c * 2);
     if (d) memcpy(result + len_a + len_b + len_c, d, len_d * 2);
-        
+
     result[len_a + len_b + len_c + len_d] = 0;
 
     return result;
 }
 
 typedef void (*Visit_Proc_W)(wchar_t *short_name, wchar_t *full_name, Version_Data *data);
-bool visit_files_w(wchar_t *dir_name, Version_Data *data, Visit_Proc_W proc) {
+static bool visit_files_w(wchar_t *dir_name, Version_Data *data, Visit_Proc_W proc) {
 
     // Visit everything in one folder (non-recursively). If it's a directory
     // that doesn't start with ".", call the visit proc on it. The visit proc
@@ -224,7 +230,7 @@ bool visit_files_w(wchar_t *dir_name, Version_Data *data, Visit_Proc_W proc) {
 
     auto wildcard_name = concat(dir_name, L"\\*");
     defer { free(wildcard_name); };
-    
+
     WIN32_FIND_DATAW find_data;
     auto handle = FindFirstFileW(wildcard_name, &find_data);
     if (handle == INVALID_HANDLE_VALUE) return false;
@@ -233,25 +239,25 @@ bool visit_files_w(wchar_t *dir_name, Version_Data *data, Visit_Proc_W proc) {
         if ((find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && (find_data.cFileName[0] != '.')) {
             auto full_name = concat(dir_name, L"\\", find_data.cFileName);
             defer { free(full_name); };
-          
+
             proc(find_data.cFileName, full_name, data);
         }
-        
+
         auto success = FindNextFileW(handle, &find_data);
         if (!success) break;
     }
 
     FindClose(handle);
-    
+
     return true;
 }
 
 
-wchar_t *find_windows_kit_root(HKEY key, wchar_t *version) {
+static wchar_t *find_windows_kit_root(HKEY key, wchar_t *version) {
     // Given a key to an already opened registry entry,
     // get the value stored under the 'version' subkey.
     // If that's not the right terminology, hey, I never do registry stuff.
-    
+
     DWORD required_length;
     auto rc = RegQueryValueExW(key, version, NULL, NULL, NULL, &required_length);
     if (rc != 0)  return NULL;
@@ -269,13 +275,13 @@ wchar_t *find_windows_kit_root(HKEY key, wchar_t *version) {
     if (value[length]) {
         value[length+1] = 0;
     }
-    
+
     return value;
 }
 
-void win10_best(wchar_t *short_name, wchar_t *full_name, Version_Data *data) {
+static void win10_best(wchar_t *short_name, wchar_t *full_name, Version_Data *data) {
     // Find the Windows 10 subdirectory with the highest version number.
-    
+
     int i0, i1, i2, i3;
     auto success = swscanf_s(short_name, L"%d.%d.%d.%d", &i0, &i1, &i2, &i3);
     if (success < 4) return;
@@ -295,7 +301,7 @@ void win10_best(wchar_t *short_name, wchar_t *full_name, Version_Data *data) {
     // after we execute this function, so Win*_Data would contain an invalid pointer.
     if (data->best_name) free(data->best_name);
     data->best_name = _wcsdup(full_name);
-            
+
     if (data->best_name) {
         data->best_version[0] = i0;
         data->best_version[1] = i1;
@@ -304,7 +310,7 @@ void win10_best(wchar_t *short_name, wchar_t *full_name, Version_Data *data) {
     }
 }
 
-void win8_best(wchar_t *short_name, wchar_t *full_name, Version_Data *data) {
+static void win8_best(wchar_t *short_name, wchar_t *full_name, Version_Data *data) {
     // Find the Windows 8 subdirectory with the highest version number.
 
     int i0, i1;
@@ -327,12 +333,12 @@ void win8_best(wchar_t *short_name, wchar_t *full_name, Version_Data *data) {
     }
 }
 
-void find_windows_kit_root(Find_Result *result) {
+static void find_windows_kit_root(Find_Result *result) {
     // Information about the Windows 10 and Windows 8 development kits
     // is stored in the same place in the registry. We open a key
     // to that place, first checking preferntially for a Windows 10 kit,
     // then, if that's not found, a Windows 8 kit.
-    
+
     HKEY main_key;
 
     auto rc = RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots",
@@ -348,7 +354,7 @@ void find_windows_kit_root(Find_Result *result) {
         Version_Data data = {0};
         auto windows10_lib = concat(windows10_root, L"Lib");
         defer { free(windows10_lib); };
-        
+
         visit_files_w(windows10_lib, &data, win10_best);
         if (data.best_name) {
             result->windows_sdk_version = 10;
@@ -362,7 +368,7 @@ void find_windows_kit_root(Find_Result *result) {
 
     if (windows8_root) {
         defer { free(windows8_root); };
-        
+
         auto windows8_lib = concat(windows8_root, L"Lib");
         defer { free(windows8_lib); };
 
@@ -379,7 +385,7 @@ void find_windows_kit_root(Find_Result *result) {
 }
 
 
-void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Result *result) {
+static void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Result *result) {
     // The name of this procedure is kind of cryptic. Its purpose is
     // to fight through Microsoft craziness. The things that the fine
     // Visual Studio team want you to do, JUST TO FIND A SINGLE FOLDER
@@ -394,7 +400,7 @@ void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Result *res
     //
     // If all this COM object instantiation, enumeration, and querying doesn't give us
     // a useful result, we drop back to the registry-checking method.
-    
+
     auto rc = CoInitialize(NULL);
     // "Subsequent valid calls return false." So ignore false.
     // if rc != S_OK  return false;
@@ -420,12 +426,12 @@ void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Result *res
         if (hr != S_OK) break;
 
         defer { instance->Release(); };
-        
+
         BSTR bstr_inst_path;
         hr = instance->GetInstallationPath(&bstr_inst_path);
         if (hr != S_OK)  continue;
         defer { SysFreeString(bstr_inst_path); };
-        
+
         auto tools_filename = concat(bstr_inst_path, L"\\VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt");
         defer { free(tools_filename); };
 
@@ -462,13 +468,13 @@ void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Result *res
 
         /*
            Ryan Saunderson said:
-           "Clang uses the 'SetupInstance->GetInstallationVersion' / ISetupHelper->ParseVersion to find the newest version 
+           "Clang uses the 'SetupInstance->GetInstallationVersion' / ISetupHelper->ParseVersion to find the newest version
            and then reads the tools file to define the tools path - which is definitely better than what i did."
- 
+
            So... @Incomplete: Should probably pick the newest version...
         */
     }
-    
+
     // If we get here, we didn't find Visual Studio 2017. Try earlier versions.
 
     HKEY vs7_key;
@@ -495,12 +501,12 @@ void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Result *res
         auto buffer = (wchar_t *)malloc(cb_data);
         if (!buffer)  return;
         defer { free(buffer); };
-        
+
         rc = RegQueryValueExW(vs7_key, v, NULL, NULL, (LPBYTE)buffer, &cb_data);
         if (rc != 0)  continue;
 
         // @Robustness: Do the zero-termination thing suggested in the RegQueryValue docs?
-        
+
         auto lib_path = concat(buffer, L"VC\\Lib\\amd64");
 
         // Check to see whether a vcruntime.lib actually exists here.
@@ -512,7 +518,7 @@ void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Result *res
             result->vs_library_path = lib_path;
             return;
         }
-        
+
         free(lib_path);
     }
 
@@ -520,8 +526,8 @@ void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Result *res
 }
 
 
-Find_Result find_visual_studio_and_windows_sdk() {
-    Find_Result result;
+extern "C" Find_Result find_visual_studio_and_windows_sdk() {
+    Find_Result result{};
 
     find_windows_kit_root(&result);
 
