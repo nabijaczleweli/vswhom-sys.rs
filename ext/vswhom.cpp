@@ -74,6 +74,12 @@ extern "C" {
         free(result->windows_sdk_ucrt_library_path);
         free(result->vs_exe_path);
         free(result->vs_library_path);
+
+        result->windows_sdk_root = NULL;
+        result->windows_sdk_um_library_path = NULL;
+        result->windows_sdk_ucrt_library_path = NULL;
+        result->vs_exe_path = NULL;
+        result->vs_library_path = NULL;
     }
 }
 
