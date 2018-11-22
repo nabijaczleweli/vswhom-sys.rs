@@ -66,15 +66,16 @@ extern "C" {
         wchar_t *vs_library_path;
     };
 
-    Find_Result find_visual_studio_and_windows_sdk();
+    Find_Result vswhom_find_visual_studio_and_windows_sdk();
 
-    void free_resources(Find_Result *result) {
+    void vswhom_free_resources(Find_Result *result) {
         free(result->windows_sdk_root);
         free(result->windows_sdk_um_library_path);
         free(result->windows_sdk_ucrt_library_path);
         free(result->vs_exe_path);
         free(result->vs_library_path);
 
+        result->windows_sdk_version = 0;
         result->windows_sdk_root = NULL;
         result->windows_sdk_um_library_path = NULL;
         result->windows_sdk_ucrt_library_path = NULL;
@@ -84,8 +85,8 @@ extern "C" {
 }
 
 //
-// Call find_visual_studio_and_windows_sdk, look at the resulting
-// paths, then call free_resources on the result.
+// Call vswhom_find_visual_studio_and_windows_sdk, look at the resulting
+// paths, then call vswhom_free_resources on the result.
 //
 // Everything else in this file is implementation details that you
 // don't need to care about.
@@ -532,7 +533,7 @@ static void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Resu
 }
 
 
-extern "C" Find_Result find_visual_studio_and_windows_sdk() {
+extern "C" Find_Result vswhom_find_visual_studio_and_windows_sdk() {
     Find_Result result{};
 
     find_windows_kit_root(&result);
