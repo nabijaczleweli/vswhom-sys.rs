@@ -11,4 +11,5 @@ license = "MIT"
 version = "0.1.0"
 authors = ["nabijaczleweli <nabijaczleweli@gmail.com>"]
 
-[dependencies]
+[build-dependencies]
+cc = "1.0"
