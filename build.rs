@@ -7,8 +7,6 @@ fn main() {
 
     cc::Build::new()
         .cpp(true)
-        .warnings(false)
-        .extra_warnings(false)
         .file("ext/vswhom.cpp")
         .compile("vswhom");
 

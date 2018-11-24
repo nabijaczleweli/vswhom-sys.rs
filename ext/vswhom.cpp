@@ -76,11 +76,11 @@ extern "C" {
         free(result->vs_library_path);
 
         result->windows_sdk_version = 0;
-        result->windows_sdk_root = NULL;
-        result->windows_sdk_um_library_path = NULL;
-        result->windows_sdk_ucrt_library_path = NULL;
-        result->vs_exe_path = NULL;
-        result->vs_library_path = NULL;
+        result->windows_sdk_root = nullptr;
+        result->windows_sdk_um_library_path = nullptr;
+        result->windows_sdk_ucrt_library_path = nullptr;
+        result->vs_exe_path = nullptr;
+        result->vs_library_path = nullptr;
     }
 }
 
@@ -202,7 +202,7 @@ static bool os_file_exists(wchar_t *name) {
     return true;
 }
 
-static wchar_t *concat(wchar_t *a, wchar_t *b, wchar_t *c = nullptr, wchar_t *d = nullptr) {
+static wchar_t *concat(const wchar_t *a, const wchar_t *b, const wchar_t *c = nullptr, const wchar_t *d = nullptr) {
     // Concatenate up to 4 wide strings together. Allocated with malloc.
     // If you don't like that, use a programming language that actually
     // helps you with using custom allocators. Or just edit the code.
@@ -260,7 +260,7 @@ static bool visit_files_w(wchar_t *dir_name, Version_Data *data, Visit_Proc_W pr
 }
 
 
-static wchar_t *find_windows_kit_root(HKEY key, wchar_t *version) {
+static wchar_t *find_windows_kit_root(HKEY key, const wchar_t *version) {
     // Given a key to an already opened registry entry,
     // get the value stored under the 'version' subkey.
     // If that's not the right terminology, hey, I never do registry stuff.
@@ -358,7 +358,7 @@ static void find_windows_kit_root(Find_Result *result) {
 
     if (windows10_root) {
         defer { free(windows10_root); };
-        Version_Data data = {0};
+        Version_Data data{};
         auto windows10_lib = concat(windows10_root, L"Lib");
         defer { free(windows10_lib); };
 
@@ -379,7 +379,7 @@ static void find_windows_kit_root(Find_Result *result) {
         auto windows8_lib = concat(windows8_root, L"Lib");
         defer { free(windows8_lib); };
 
-        Version_Data data = {0};
+        Version_Data data{};
         visit_files_w(windows8_lib, &data, win8_best);
         if (data.best_name) {
             result->windows_sdk_version = 8;
@@ -491,7 +491,7 @@ static void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Resu
     defer { RegCloseKey(vs7_key); };
 
     // Hardcoded search for 4 prior Visual Studio versions. Is there something better to do here?
-    wchar_t *versions[] = { L"14.0", L"12.0", L"11.0", L"10.0" };
+    const wchar_t *versions[] = { L"14.0", L"12.0", L"11.0", L"10.0" };
     const int NUM_VERSIONS = sizeof(versions) / sizeof(versions[0]);
 
     for (int i = 0; i < NUM_VERSIONS; i++) {
