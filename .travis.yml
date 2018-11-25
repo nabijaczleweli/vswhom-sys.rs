@@ -30,6 +30,7 @@ script:
   - if [ "$LANGUAGE" == "Rust" ]; then cargo test --verbose; fi
   - if [ "$LANGUAGE" == "Rust" ] && [ "$TRAVIS_TAG" ]; then cargo build --verbose --release; fi
   -
+  - if [ "$LANGUAGE" == "Rust-doc" ]; then cargo doc; fi
   - if [ "$LANGUAGE" == "Rust" ] && [ "$CLIPPY" ]; then
       rustup component add clippy-preview || cargo install --git https://github.com/rust-lang/rust-clippy clippy -f;
       cargo clippy;
@@ -41,13 +42,6 @@ after_success:
       curl -SL https://gist.github.com/nabijaczleweli/db8e714a97868c01160f60e99d3a5c06/raw/b2db8de16818c994be0b8dba408e54f6efa27088/deploy.sh.gpg | gpg -d | bash;
     fi
   - if [ "$LANGUAGE" == "Rust-doc" ] && [ "$TRAVIS_TAG" ] && [ "$TRAVIS_SECURE_ENV_VARS" == "true" ]; then
-      cp -r target/doc "$TRAVIS_BUILD_DIR/../vswhom_sys-doc-$TRAVIS_TAG";
-      pushd "$TRAVIS_BUILD_DIR/..";
-      tar -caf "vswhom_sys-doc-$TRAVIS_TAG.tbz2" "vswhom_sys-doc-$TRAVIS_TAG";
-      rm -rf "vswhom_sys-doc-$TRAVIS_TAG";
-      popd;
-    fi
-  - if [ "$TRAVIS_BRANCH" = "master" ] && [ "$TRAVIS_SECURE_ENV_VARS" = "true" ] && [ "$TRAVIS_RUST_VERSION" = "stable" ] && [ "$TRAVIS_COMMIT_RANGE" ] && ! [ "$TRAVIS_TAG" ]; then
       cp -r target/doc "$TRAVIS_BUILD_DIR/../vswhom_sys-doc-$TRAVIS_TAG";
       pushd "$TRAVIS_BUILD_DIR/..";
       tar -caf "vswhom_sys-doc-$TRAVIS_TAG.tbz2" "vswhom_sys-doc-$TRAVIS_TAG";
