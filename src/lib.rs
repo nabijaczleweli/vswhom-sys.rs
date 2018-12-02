@@ -27,9 +27,33 @@
 //!
 //! Here is the API you need to know about:
 //!
-//!
 //! Call `vswhom_find_visual_studio_and_windows_sdk()`, look at the resulting
 //! paths, then call `vswhom_free_resources()` on the result.
+//!
+//!
+//! This file was about 400 lines before we started adding these comments.
+//! You might think that's way too much code to do something as simple
+//! as finding a few library and executable paths. I agree. However,
+//! Microsoft's own solution to this problem, called "vswhere", is a
+//! mere EIGHT THOUSAND LINE PROGRAM, spread across 70 files,
+//! that they posted to github *unironically*.
+//!
+//! I am not making this up: https://github.com/Microsoft/vswhere
+//!
+//! Several people have therefore found the need to solve this problem
+//! themselves. We referred to some of these other solutions when
+//! figuring out what to do, most prominently ziglang's version,
+//! by Ryan Saunderson.
+//!
+//! I hate this kind of code. The fact that we have to do this at all
+//! is stupid, and the actual maneuvers we need to go through
+//! are just painful. If programming were like this all the time,
+//! I would quit.
+//!
+//! One other shortcut I took is that this is hardcoded to return the
+//! folders for x64 libraries. If you want x86 or arm, you can make
+//! slight edits to the code below, or, if enough people want this,
+//! I can work it in here.
 
 
 extern crate libc;

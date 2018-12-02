@@ -14,5 +14,5 @@ authors = ["nabijaczleweli <nabijaczleweli@gmail.com>"]
 [dependencies]
 libc = "0.2"
 
-[target.'cfg(target_os = "windows")'.build-dependencies.cc]
-version = "1.0"
+[target.'cfg(target_os = "windows")'.build-dependencies]
+cc = "1.0"
