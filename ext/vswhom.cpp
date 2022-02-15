@@ -141,18 +141,16 @@ struct ExitScope {
     T lambda;
     ExitScope(T lambda):lambda(lambda){}
     ~ExitScope(){lambda();}
-    ExitScope(const ExitScope&);
-  private:
-    ExitScope& operator =(const ExitScope&);
+    ExitScope& operator=(const ExitScope&) = delete;
 };
 
 class ExitScopeHelp {
   public:
     template<typename T>
-        ExitScope<T> operator+(T t){ return t;}
+        ExitScope<T> operator+(T t){return {t};}
 };
 
-#define defer const auto& CONCAT(defer__, __LINE__) = ExitScopeHelp() + [&]()
+#define defer const auto CONCAT(defer__, __LINE__) = ExitScopeHelp() + [&]()
 
 
 // COM objects for the ridiculous Microsoft craziness.
