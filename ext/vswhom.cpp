@@ -505,14 +505,15 @@ static void find_visual_studio_by_fighting_through_microsoft_craziness(Find_Resu
             continue;
         }
 
-        auto buffer = (wchar_t *)malloc(cb_data);
+        auto buffer = (wchar_t *)malloc(cb_data + sizeof(wchar_t));
         if (!buffer)  return;
         defer { free(buffer); };
 
         rc = RegQueryValueExW(vs7_key, v, NULL, NULL, (LPBYTE)buffer, &cb_data);
         if (rc != 0)  continue;
 
-        // @Robustness: Do the zero-termination thing suggested in the RegQueryValue docs?
+        if(buffer[cb_data])
+            buffer[cb_data+1] = 0;
 
         auto lib_path = concat(buffer, L"VC\\Lib\\amd64");
 
