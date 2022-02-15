@@ -269,8 +269,8 @@ static wchar_t *find_windows_kit_root(HKEY key, const wchar_t *version) {
     auto rc = RegQueryValueExW(key, version, NULL, NULL, NULL, &required_length);
     if (rc != 0)  return NULL;
 
-    DWORD length = required_length + 2;  // The +2 is for the maybe optional zero later on. Probably we are over-allocating.
-    wchar_t *value = (wchar_t *)malloc(length);
+    DWORD length = required_length + sizeof(wchar_t);  // The +2 is for the maybe optional zero later on. Probably we are over-allocating.
+    wchar_t *value = (wchar_t *)malloc(length + sizeof(wchar_t));
     if (!value) return NULL;
 
     rc = RegQueryValueExW(key, version, NULL, NULL, (LPBYTE)value, &length);  // We know that version is zero-terminated...
