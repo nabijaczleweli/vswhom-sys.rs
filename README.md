@@ -5,3 +5,11 @@ Please note that the native code
 [was discovered to cause memory corruption](https://github.com/nabijaczleweli/rust-embed-resource/issues/20#issuecomment-686496753) in some cases.
 
 ## [Documentation](https://rawcdn.githack.com/nabijaczleweli/vswhom-sys.rs/doc/vswhom_sys/index.html)
+
+## Special thanks
+
+To all who support further development on Patreon, in particular:
+
+  * ThePhD
+  * Embark Studios
+  * Jasper Bekkers
