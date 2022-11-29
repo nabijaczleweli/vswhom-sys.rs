@@ -16,6 +16,7 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unknwn.h>
 #include <assert.h>
 #include <stdio.h>
 #include <sys/stat.h>
