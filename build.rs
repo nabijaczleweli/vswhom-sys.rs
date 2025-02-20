@@ -14,7 +14,7 @@ fn main() {
     cc.cpp(true);
     cc.file("ext/vswhom.cpp");
     if cc.get_compiler().is_like_msvc() {
-        cc.flag("/Zm20000");
+        cc.flag("/Zm2000");
     }
     cc.compile("vswhom");
 
