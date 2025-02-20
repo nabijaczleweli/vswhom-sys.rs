@@ -10,10 +10,13 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=ext/vswhom.cpp");
 
-    cc::Build::new()
-        .cpp(true)
-        .file("ext/vswhom.cpp")
-        .compile("vswhom");
+    let mut cc = cc::Build::new();
+    cc.cpp(true);
+    cc.file("ext/vswhom.cpp");
+    if cc.get_compiler().is_like_msvc() {
+        cc.flag("/Zm20000");
+    }
+    cc.compile("vswhom");
 
     println!("cargo:rustc-link-lib=dylib=OleAut32");
     println!("cargo:rustc-link-lib=dylib=Ole32");
